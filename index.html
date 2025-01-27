@@ -10,5 +10,18 @@
     <body>
         <script defer src="scriptures.js"></script>
         <p>Hello</p>
+        <script type="text/javascript">
+            function ready(readyListener) {
+                if (document.readyState === "loading") {
+                    document.addEventListener("DOMContentLoaded", readyListener);
+                } else {
+                    readyListener();
+                }
+            }
+
+            ready(() => {
+                Scriptures.init();
+            });
+        </script>
     </body>
 </html>
