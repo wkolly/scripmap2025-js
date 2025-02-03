@@ -1,4 +1,19 @@
+/*======================================================================
+ * FILE:    scriptures.js
+ * AUTHOR:  Stephen W. Liddle
+ * DATE:    Winter 2025
+ *
+ * DESCRIPTION: Front-end JavaScript code for the Scriptures Mapped,
+ *              IS 542, Winter 2025, BYU.
+ */
+
 const Scriptures = (function () {
+    // NEEDSWORK: How can we ensure that we're in strict mode?
+
+    /*------------------------------------------------------------------
+     *                      CONSTANTS
+     */
+    const ID_NAV_ELEMENT = "scrip-nav";
     const REQUEST_GET = "GET";
     const REQUEST_STATUS_ERROR = 400;
     const REQUEST_STATUS_OK = 200;
@@ -6,6 +21,24 @@ const Scriptures = (function () {
     const URL_BOOKS = `${URL_BASE}model/books.php`;
     const URL_VOLUMES = `${URL_BASE}model/volumes.php`;
 
+    /*------------------------------------------------------------------
+     *                      PRIVATE VARIABLES
+     */
+    // NEEDSWORK
+
+    /*------------------------------------------------------------------
+     *                      PRIVATE METHOD DECLARATIONS
+     */
+    // NEEDSWORK
+
+    /*------------------------------------------------------------------
+     *                      PUBLIC METHOD DECLARATIONS
+     */
+    // NEEDSWORK
+
+    /*------------------------------------------------------------------
+     *                      PRIVATE METHODS
+     */
     function getJSONRequest(url, successCallback) {
         const request = new XMLHttpRequest();
 
@@ -29,17 +62,48 @@ const Scriptures = (function () {
         request.send();
     }
 
+    /*------------------------------------------------------------------
+     *                      PUBLIC METHODS
+     */
     function init() {
         let books;
         let volumes;
+        let booksIsLoaded = false;
+        let volumesIsLoaded = false;
+
+        function displayVolumes() {
+            const scripNav = document.getElementById(ID_NAV_ELEMENT);
+
+            volumes.forEach((volume) => {
+                const element = document.createElement("li");
+
+                element.textContent = volume.fullName;
+                scripNav.append(element);
+            });
+
+            Object.keys(books).forEach((bookKey) => {
+                const element = document.createElement("li");
+
+                element.textContent = books[bookKey].fullName;
+                scripNav.append(element);
+            });
+        }
 
         getJSONRequest(URL_BOOKS, (json) => {
             books = json;
-            console.log(books);
+            booksIsLoaded = true;
+
+            if (volumesIsLoaded) {
+                displayVolumes();
+            }
         });
         getJSONRequest(URL_VOLUMES, (json) => {
             volumes = json;
-            console.log(volumes);
+            volumesIsLoaded = true;
+
+            if (booksIsLoaded) {
+                displayVolumes();
+            }
         });
     }
 
@@ -47,3 +111,5 @@ const Scriptures = (function () {
         init
     };
 })();
+
+// NEEDSWORK: How can we prevent callers from changing the object that we're returning?
