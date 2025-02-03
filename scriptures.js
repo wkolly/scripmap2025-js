@@ -8,15 +8,12 @@
  */
 
 const Scriptures = (function () {
-    // NEEDSWORK: How can we ensure that we're in strict mode?
+    "use strict";
 
     /*------------------------------------------------------------------
      *                      CONSTANTS
      */
     const ID_NAV_ELEMENT = "scrip-nav";
-    const REQUEST_GET = "GET";
-    const REQUEST_STATUS_ERROR = 400;
-    const REQUEST_STATUS_OK = 200;
     const URL_BASE = "https://scriptures.byu.edu/mapscrip/";
     const URL_BOOKS = `${URL_BASE}model/books.php`;
     const URL_VOLUMES = `${URL_BASE}model/volumes.php`;
@@ -24,50 +21,42 @@ const Scriptures = (function () {
     /*------------------------------------------------------------------
      *                      PRIVATE VARIABLES
      */
-    // NEEDSWORK
+    let books;
+    let volumes;
 
     /*------------------------------------------------------------------
      *                      PRIVATE METHOD DECLARATIONS
      */
-    // NEEDSWORK
+    let getJSONRequest;
 
     /*------------------------------------------------------------------
      *                      PUBLIC METHOD DECLARATIONS
      */
-    // NEEDSWORK
+    let init;
 
     /*------------------------------------------------------------------
      *                      PRIVATE METHODS
      */
-    function getJSONRequest(url, successCallback) {
-        const request = new XMLHttpRequest();
+    getJSONRequest = async function (url, successCallback) {
+        try {
+            const response = await fetch(url);
 
-        function handleAjaxError() {
-            console.log("There was an AJAX problem.");
-        }
-
-        function handleAjaxResponse() {
-            if (request.status >= REQUEST_STATUS_OK && request.status < REQUEST_STATUS_ERROR) {
-                const data = JSON.parse(request.response);
-
-                successCallback(data);
-            } else {
-                handleAjaxError();
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
             }
-        }
 
-        request.open(REQUEST_GET, url, true);
-        request.onload = handleAjaxResponse;
-        request.onerror = handleAjaxError;
-        request.send();
-    }
+            const data = await response.json();
+
+            successCallback(data);
+        } catch (error) {
+            console.error(`There was an AJAX problem: ${error}.`);
+        }
+    };
 
     /*------------------------------------------------------------------
      *                      PUBLIC METHODS
      */
-    function init() {
-        let books;
-        let volumes;
+    init = function () {
         let booksIsLoaded = false;
         let volumesIsLoaded = false;
 
@@ -105,11 +94,11 @@ const Scriptures = (function () {
                 displayVolumes();
             }
         });
-    }
+    };
 
     return {
         init
     };
 })();
 
-// NEEDSWORK: How can we prevent callers from changing the object that we're returning?
+Object.freeze(Scriptures);
