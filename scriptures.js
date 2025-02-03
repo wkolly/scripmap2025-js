@@ -27,6 +27,7 @@ const Scriptures = (function () {
     /*------------------------------------------------------------------
      *                      PRIVATE METHOD DECLARATIONS
      */
+    let cacheBooks;
     let getJSONRequest;
 
     /*------------------------------------------------------------------
@@ -37,6 +38,33 @@ const Scriptures = (function () {
     /*------------------------------------------------------------------
      *                      PRIVATE METHODS
      */
+    cacheBooks = function (callback) {
+        // We have both volumes and books from the server, so here we
+        // build an array of books for each volume so it's easy to get
+        // the books when we have a volume object.  This is helpful,
+        // for example, when building the navigation grid of books for
+        // a given volume.
+
+        volumes.forEach(function (volume) {
+            let volumeBooks = [];
+            let bookId = volume.minBookId;
+
+            while (bookId <= volume.maxBookId) {
+                volumeBooks.push(books[bookId]);
+                bookId += 1;
+            }
+
+            volume.books = volumeBooks;
+        });
+
+        Object.freeze(books);
+        Object.freeze(volumes);
+
+        if (typeof callback === "function") {
+            callback();
+        }
+    };
+
     getJSONRequest = async function (url, successCallback) {
         try {
             const response = await fetch(url);
@@ -67,14 +95,14 @@ const Scriptures = (function () {
                 const element = document.createElement("li");
 
                 element.textContent = volume.fullName;
-                scripNav.append(element);
-            });
+                scripNav.appendChild(element);
 
-            Object.keys(books).forEach((bookKey) => {
-                const element = document.createElement("li");
+                volume.books.forEach((book) => {
+                    const element = document.createElement("li");
 
-                element.textContent = books[bookKey].fullName;
-                scripNav.append(element);
+                    element.textContent = book.fullName;
+                    scripNav.appendChild(element);
+                });
             });
         }
 
@@ -83,7 +111,7 @@ const Scriptures = (function () {
             booksIsLoaded = true;
 
             if (volumesIsLoaded) {
-                displayVolumes();
+                cacheBooks(displayVolumes);
             }
         });
         getJSONRequest(URL_VOLUMES, (json) => {
@@ -91,7 +119,7 @@ const Scriptures = (function () {
             volumesIsLoaded = true;
 
             if (booksIsLoaded) {
-                displayVolumes();
+                cacheBooks(displayVolumes);
             }
         });
     };
