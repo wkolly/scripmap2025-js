@@ -12,7 +12,8 @@
             rel="stylesheet"
         />
 
-        <link rel="stylesheet" href="scriptures.css" />
+        <link rel="stylesheet" href="css/scriptures.css" />
+        <link rel="stylesheet" href="css/Waves.css" />
     </head>
     <body class="main-page">
         <header id="scrip-header">
@@ -25,7 +26,7 @@
         </header>
         <nav id="scrip-nav">Nav</nav>
         <main id="scrip-map">Map</main>
-        <script defer src="scriptures.js"></script>
+        <script defer src="./js/scriptures.js"></script>
         <script type="text/javascript">
             function ready(readyListener) {
                 if (document.readyState === "loading") {
@@ -40,5 +41,7 @@
                 window.addEventListener("hashchange", Scriptures.onHashChanged);
             });
         </script>
+
+        <script defer type="text/javascript" src="./js/Waves.js" />
     </body>
 </html>

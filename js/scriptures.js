@@ -46,7 +46,9 @@ const Html = (function () {
         // Add class and/or id attributes as requested
 
         if (clazz) {
-            node.classList.add(clazz);
+            for (const word of clazz.split(" ")) {
+                node.classList.add(word);
+            }
         }
 
         if (id) {
@@ -118,7 +120,7 @@ const Scriptures = (function () {
      *                      CONSTANTS
      */
     const CLASS_BOOKS = "books";
-    const CLASS_BUTTON = "btn";
+    const CLASS_BUTTON = "waves-effect waves-custom waves-ripple btn";
     const CLASS_VOLUME = "volume";
     const ID_NAV_ELEMENT = "scrip-nav";
     const ID_SCRIPTURES_NAVIGATION = "scripnav";
