@@ -196,9 +196,14 @@ div.books a.chapter {
     flex: 0 0 4em;
 }
 
-.volume h5 {
+.volume h5,
+#scripnav h5 {
     font-size: 1.24rem;
     margin: 0.72rem 0 0.556rem 0;
+}
+
+#scripnav h5 {
+    padding: 0 0.5em;
 }
 
 .books li {
@@ -239,6 +244,7 @@ div.text {
     font: -apple-system-body;
     font-family: "Palatino", serif;
     font-size: 120%;
+    font-weight: normal;
     line-height: 1.45em;
     -webkit-text-size-adjust: 100%;
 }

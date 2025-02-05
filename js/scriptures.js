@@ -121,11 +121,14 @@ const Scriptures = (function () {
      */
     const CLASS_BOOKS = "books";
     const CLASS_BUTTON = "waves-effect waves-custom waves-ripple btn";
+    const CLASS_CHAPTER = "chapter";
     const CLASS_VOLUME = "volume";
     const ID_NAV_ELEMENT = "scrip-nav";
     const ID_SCRIPTURES_NAVIGATION = "scripnav";
+    const SKIP_JSON_PARSE = true;
     const URL_BASE = "https://scriptures.byu.edu/mapscrip/";
     const URL_BOOKS = `${URL_BASE}model/books.php`;
+    const URL_SCRIPTURES = `${URL_BASE}mapgetscrip2.php`;
     const URL_VOLUMES = `${URL_BASE}model/volumes.php`;
 
     /*------------------------------------------------------------------
@@ -137,11 +140,15 @@ const Scriptures = (function () {
     /*------------------------------------------------------------------
      *                      PRIVATE METHOD DECLARATIONS
      */
+    let ajax;
     let bookChapterValid;
     let buildBooksGrid;
+    let buildChaptersGrid;
     let buildVolumesGrid;
     let cacheBooks;
-    let getJSONRequest;
+    let encodedScripturesUrl;
+    let getScripturesFailure;
+    let getScripturesSuccess;
     let hashParameters;
     let navigateBook;
     let navigateChapter;
@@ -159,6 +166,31 @@ const Scriptures = (function () {
     /*------------------------------------------------------------------
      *                      PRIVATE METHODS
      */
+    ajax = async function (url, successCallback, failureCallback, skipJsonParse) {
+        try {
+            const response = await fetch(url);
+            let data;
+
+            if (!response.ok) {
+                throw new Error(`HTTP error, status: ${response.status}`);
+            }
+
+            if (skipJsonParse) {
+                data = await response.text();
+            } else {
+                data = await response.json();
+            }
+
+            if (typeof successCallback === "function") {
+                successCallback(data);
+            }
+        } catch (error) {
+            if (typeof failureCallback === "function") {
+                failureCallback(request);
+            }
+        }
+    };
+
     bookChapterValid = function (bookId, chapter) {
         const book = books[bookId];
 
@@ -193,6 +225,29 @@ const Scriptures = (function () {
         });
 
         navigationNode.appendChild(gridContent);
+    };
+
+    buildChaptersGrid = function (navigationNode, book) {
+        const titleNode = Html.domNode(Html.TAG_HEADER5, null, null, book.fullName);
+        const volumeNode = Html.domNode(Html.TAG_DIV, CLASS_VOLUME);
+        const booksNode = Html.domNode(Html.TAG_DIV, CLASS_BOOKS);
+        let chapter = 1;
+
+        volumeNode.appendChild(titleNode);
+
+        while (chapter <= book.numChapters) {
+            const hyperlink = Html.hyperlinkNode(`#0:${book.id}:${chapter}`);
+
+            Html.decorateNode(hyperlink, CLASS_BUTTON);
+            hyperlink.classList.add(CLASS_CHAPTER);
+            hyperlink.appendChild(document.createTextNode(chapter));
+
+            booksNode.appendChild(hyperlink);
+            chapter += 1;
+        }
+
+        navigationNode.appendChild(titleNode);
+        navigationNode.appendChild(booksNode);
     };
 
     buildVolumesGrid = function (navigationNode, volumeId) {
@@ -231,20 +286,37 @@ const Scriptures = (function () {
         }
     };
 
-    getJSONRequest = async function (url, successCallback) {
-        try {
-            const response = await fetch(url);
+    encodedScripturesUrl = function (bookId, chapter, verses, isJst) {
+        if (bookId !== undefined && chapter !== undefined) {
+            let options = "";
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+            if (verses !== undefined) {
+                options += verses;
             }
 
-            const data = await response.json();
+            if (isJst !== undefined) {
+                options += "&jst=JST";
+            }
 
-            successCallback(data);
-        } catch (error) {
-            console.error(`There was an AJAX problem: ${error}.`);
+            return `${URL_SCRIPTURES}?book=${bookId}&chap=${chapter}&verses${options}`;
         }
+    };
+
+    getScripturesFailure = function () {
+        const navElement = document.getElementById("scrip-nav");
+
+        Html.replaceNodeContent(
+            navElement,
+            document.createTextNode("Unable to retrieve chapter contents.")
+        );
+    };
+
+    getScripturesSuccess = function (chapterHtml) {
+        const navElement = document.getElementById("scrip-nav");
+
+        navElement.innerHTML = chapterHtml;
+        // NEEDSWORK: update breadcrumbs
+        // NEEDSWORK: update pins on the map
     };
 
     hashParameters = function () {
@@ -256,23 +328,31 @@ const Scriptures = (function () {
     };
 
     navigateBook = function (bookId) {
-        let navElement = document.getElementById("scrip-nav");
+        const navElement = document.getElementById("scrip-nav");
+        const book = books[bookId];
 
-        // build grid of volumes and their books
-        // replace the content of navElement with the new grid
-        // configure the breadcrumbs to match
+        if (book.numChapters <= 1) {
+            navigateChapter(bookId, book.numChapters);
+        } else {
+            const chaptersNavigationNode = Html.domNode(
+                Html.TAG_DIV,
+                null,
+                ID_SCRIPTURES_NAVIGATION
+            );
 
-        navElement.innerHTML = `<p>Book ${bookId} view</p>`;
+            buildChaptersGrid(chaptersNavigationNode, book);
+            Html.replaceNodeContent(navElement, chaptersNavigationNode);
+            // NEEDSWORK: configure breadcrumbs
+        }
     };
 
     navigateChapter = function (bookId, chapter) {
-        let navElement = document.getElementById("scrip-nav");
-
-        // build grid of volumes and their books
-        // replace the content of navElement with the new grid
-        // configure the breadcrumbs to match
-
-        navElement.innerHTML = `<p>Chapter ${chapter} of book ${bookId} view</p>`;
+        ajax(
+            encodedScripturesUrl(bookId, chapter),
+            getScripturesSuccess,
+            getScripturesFailure,
+            SKIP_JSON_PARSE
+        );
     };
 
     navigateHome = function (volumeId) {
@@ -283,7 +363,7 @@ const Scriptures = (function () {
         buildVolumesGrid(scripturesNavigationNode, volumeId);
         Html.replaceNodeContent(navElement, scripturesNavigationNode);
 
-        // configure the breadcrumbs to match
+        // NEEDSWORK: configure the breadcrumbs to match
     };
 
     volumeIdIsValid = function (volumeId) {
@@ -326,7 +406,7 @@ const Scriptures = (function () {
             });
         }
 
-        getJSONRequest(URL_BOOKS, (json) => {
+        ajax(URL_BOOKS, (json) => {
             books = json;
             booksIsLoaded = true;
 
@@ -334,7 +414,7 @@ const Scriptures = (function () {
                 cacheBooks(displayVolumes);
             }
         });
-        getJSONRequest(URL_VOLUMES, (json) => {
+        ajax(URL_VOLUMES, (json) => {
             volumes = json;
             volumesIsLoaded = true;
 
