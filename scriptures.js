@@ -29,11 +29,17 @@ const Scriptures = (function () {
      */
     let cacheBooks;
     let getJSONRequest;
+    let hashParameters;
+    let navigateBook;
+    let navigateHome;
+    let navigateVolume;
+    let volumeIdIsValid;
 
     /*------------------------------------------------------------------
      *                      PUBLIC METHOD DECLARATIONS
      */
     let init;
+    let onHashChanged;
 
     /*------------------------------------------------------------------
      *                      PRIVATE METHODS
@@ -81,6 +87,48 @@ const Scriptures = (function () {
         }
     };
 
+    hashParameters = function () {
+        if (location.hash !== "" && location.hash.length > 1) {
+            return location.hash.slice(1).split(":");
+        }
+
+        return [];
+    };
+
+    navigateBook = function (bookId) {
+        let navElement = document.getElementById("scrip-nav");
+
+        // build grid of volumes and their books
+        // replace the content of navElement with the new grid
+        // configure the breadcrumbs to match
+
+        navElement.innerHTML = `<p>Book ${bookId} view</p>`;
+    };
+
+    navigateHome = function () {
+        let navElement = document.getElementById("scrip-nav");
+
+        // build grid of volumes and their books
+        // replace the content of navElement with the new grid
+        // configure the breadcrumbs to match
+
+        navElement.innerHTML = "<p>Home view</p>";
+    };
+
+    navigateVolume = function (volumeId) {
+        let navElement = document.getElementById("scrip-nav");
+
+        // build grid of volumes and their books
+        // replace the content of navElement with the new grid
+        // configure the breadcrumbs to match
+
+        navElement.innerHTML = `<p>Volume ${volumeId} view</p>`;
+    };
+
+    volumeIdIsValid = function (volumeId) {
+        return volumes.map((volume) => volume.id).includes(volumeId);
+    };
+
     /*------------------------------------------------------------------
      *                      PUBLIC METHODS
      */
@@ -124,8 +172,43 @@ const Scriptures = (function () {
         });
     };
 
+    onHashChanged = function () {
+        let [volumeId, bookId, chapter] = hashParameters();
+
+        if (volumeId === undefined) {
+            navigateHome();
+        } else if (bookId === undefined) {
+            volumeId = Number(volumeId);
+
+            if (volumeIdIsValid(volumeId)) {
+                navigateVolume(volumeId);
+            } else {
+                navigateHome();
+            }
+        } else {
+            bookId = Number(bookId);
+
+            if (books[bookId] === undefined) {
+                navigateHome();
+            } else {
+                if (chapter === undefined) {
+                    navigateBook(bookId);
+                } else {
+                    chapter = Number(chapter);
+
+                    if (bookChapterValid(bookId, chapter)) {
+                        navigateChapter(bookId, chapter);
+                    } else {
+                        navigateHome();
+                    }
+                }
+            }
+        }
+    };
+
     return {
-        init
+        init,
+        onHashChanged
     };
 })();
 

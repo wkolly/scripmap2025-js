@@ -37,6 +37,7 @@
 
             ready(() => {
                 Scriptures.init();
+                window.addEventListener("hashchange", Scriptures.onHashChanged);
             });
         </script>
     </body>
