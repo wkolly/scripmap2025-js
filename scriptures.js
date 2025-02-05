@@ -7,13 +7,14 @@
  *              IS 542, Winter 2025, BYU.
  */
 
-const Html = function () {
+const Html = (function () {
     ("use strict");
 
     /*------------------------------------------------------------------
      *                      PUBLIC CONSTANTS
      */
     const TAG_DIV = "div";
+    const TAG_HEADER5 = "h5";
     const TAG_HYPERLINK = "a";
     const TAG_I = "i";
     const TAG_LIST_ITEM = "li";
@@ -102,12 +103,13 @@ const Html = function () {
         hyperlinkNode,
         replaceNodeContent,
         TAG_DIV,
+        TAG_HEADER5,
         TAG_HYPERLINK,
         TAG_I,
         TAG_LIST_ITEM,
         TAG_UNORDERED_LIST
     };
-};
+})();
 
 const Scriptures = (function () {
     "use strict";
@@ -115,7 +117,11 @@ const Scriptures = (function () {
     /*------------------------------------------------------------------
      *                      CONSTANTS
      */
+    const CLASS_BOOKS = "books";
+    const CLASS_BUTTON = "btn";
+    const CLASS_VOLUME = "volume";
     const ID_NAV_ELEMENT = "scrip-nav";
+    const ID_SCRIPTURES_NAVIGATION = "scripnav";
     const URL_BASE = "https://scriptures.byu.edu/mapscrip/";
     const URL_BOOKS = `${URL_BASE}model/books.php`;
     const URL_VOLUMES = `${URL_BASE}model/volumes.php`;
@@ -129,13 +135,18 @@ const Scriptures = (function () {
     /*------------------------------------------------------------------
      *                      PRIVATE METHOD DECLARATIONS
      */
+    let bookChapterValid;
+    let buildBooksGrid;
+    let buildVolumesGrid;
     let cacheBooks;
     let getJSONRequest;
     let hashParameters;
     let navigateBook;
+    let navigateChapter;
     let navigateHome;
     let navigateVolume;
     let volumeIdIsValid;
+    let volumeTitleNode;
 
     /*------------------------------------------------------------------
      *                      PUBLIC METHOD DECLARATIONS
@@ -146,6 +157,51 @@ const Scriptures = (function () {
     /*------------------------------------------------------------------
      *                      PRIVATE METHODS
      */
+    bookChapterValid = function (bookId, chapter) {
+        const book = books[bookId];
+
+        if (book === undefined) {
+            return false;
+        }
+
+        if (chapter === book.numChapters) {
+            return true;
+        }
+
+        if (chapter >= 1 && chapter <= book.numChapters) {
+            return Number.isInteger(chapter);
+        }
+
+        return false;
+    };
+
+    buildBooksGrid = function (navigationNode, volume) {
+        const gridContent = Html.domNode(Html.TAG_DIV, CLASS_BOOKS);
+
+        volume.books.forEach((book) => {
+            const hyperlink = Html.hyperlinkNode(
+                `#${volume.id}:${book.id}`,
+                Html.decodeEntities(book.fullName),
+                CLASS_BUTTON,
+                book.id
+            );
+
+            hyperlink.appendChild(document.createTextNode(Html.decodeEntities(book.gridName)));
+            gridContent.appendChild(hyperlink);
+        });
+
+        navigationNode.appendChild(gridContent);
+    };
+
+    buildVolumesGrid = function (navigationNode, volumeId) {
+        volumes.forEach((volume) => {
+            if (volumeId === undefined || volumeId === volume.id) {
+                navigationNode.appendChild(volumeTitleNode(volume));
+                buildBooksGrid(navigationNode, volume);
+            }
+        });
+    };
+
     cacheBooks = function (callback) {
         // We have both volumes and books from the server, so here we
         // build an array of books for each volume so it's easy to get
@@ -207,28 +263,40 @@ const Scriptures = (function () {
         navElement.innerHTML = `<p>Book ${bookId} view</p>`;
     };
 
-    navigateHome = function () {
+    navigateChapter = function (bookId, chapter) {
         let navElement = document.getElementById("scrip-nav");
 
         // build grid of volumes and their books
         // replace the content of navElement with the new grid
         // configure the breadcrumbs to match
 
-        navElement.innerHTML = "<p>Home view</p>";
+        navElement.innerHTML = `<p>Chapter ${chapter} of book ${bookId} view</p>`;
     };
 
-    navigateVolume = function (volumeId) {
+    navigateHome = function (volumeId) {
         let navElement = document.getElementById("scrip-nav");
 
-        // build grid of volumes and their books
-        // replace the content of navElement with the new grid
-        // configure the breadcrumbs to match
+        const scripturesNavigationNode = Html.domNode(Html.TAG_DIV, null, ID_SCRIPTURES_NAVIGATION);
 
-        navElement.innerHTML = `<p>Volume ${volumeId} view</p>`;
+        buildVolumesGrid(scripturesNavigationNode, volumeId);
+        Html.replaceNodeContent(navElement, scripturesNavigationNode);
+
+        // configure the breadcrumbs to match
     };
 
     volumeIdIsValid = function (volumeId) {
         return volumes.map((volume) => volume.id).includes(volumeId);
+    };
+
+    volumeTitleNode = function (volume) {
+        const titleNode = Html.domNode(Html.TAG_DIV, CLASS_VOLUME);
+        const hyperlink = Html.hyperlinkNode(`#${volume.id}`, volume.fullName);
+        const headerNode = Html.domNode(Html.TAG_HEADER5, null, null, volume.fullName);
+
+        hyperlink.appendChild(headerNode);
+        titleNode.appendChild(hyperlink);
+
+        return titleNode;
     };
 
     /*------------------------------------------------------------------
@@ -283,7 +351,7 @@ const Scriptures = (function () {
             volumeId = Number(volumeId);
 
             if (volumeIdIsValid(volumeId)) {
-                navigateVolume(volumeId);
+                navigateHome(volumeId);
             } else {
                 navigateHome();
             }
