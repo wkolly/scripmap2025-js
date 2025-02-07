@@ -134,7 +134,7 @@ header#scrip-header {
     font-weight: normal;
 }
 
-nav#scrip-nav {
+nav#nav-root {
     grid-area: nav;
 }
 
@@ -142,7 +142,7 @@ main#scrip-map {
     grid-area: map;
 }
 
-nav#scrip-nav {
+nav#nav-root {
     min-width: 220px;
     max-width: 440px;
     flex: 1 1 30%;
@@ -281,7 +281,7 @@ div.navheading {
     padding: 0.3em;
 }
 
-nav#scrip-nav ul.versesblock {
+nav#nav-root ul.versesblock {
     margin: 0;
     line-height: auto;
     list-style: none;

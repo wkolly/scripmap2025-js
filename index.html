@@ -24,8 +24,9 @@
             </div>
             <div id="crumbs-complement">Breadcrumbs</div>
         </header>
-        <nav id="scrip-nav">Nav</nav>
+        <nav id="nav-root">Nav</nav>
         <main id="scrip-map">Map</main>
+        <script defer src="./js/html.js"></script>
         <script defer src="./js/scriptures.js"></script>
         <script type="text/javascript">
             function ready(readyListener) {
@@ -37,8 +38,10 @@
             }
 
             ready(() => {
-                Scriptures.init();
-                window.addEventListener("hashchange", Scriptures.onHashChanged);
+                Scriptures.init(() => {
+                    window.addEventListener("hashchange", Scriptures.onHashChanged);
+                    Scriptures.onHashChanged();
+                });
             });
         </script>
 
