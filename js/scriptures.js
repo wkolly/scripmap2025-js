@@ -17,6 +17,7 @@ const Scriptures = (function () {
     const CLASS_BUTTON = "waves-effect waves-custom waves-ripple btn";
     const CLASS_CHAPTER = "chapter";
     const CLASS_VOLUME = "volume";
+    const HOME_BREADCRUMB = "The Scriptures";
     const ID_CRUMBS = "crumbs";
     const ID_CRUMBS_COMPLEMENT = "crumbs-complement";
     const ID_NAV_ELEMENT = "nav-root";
@@ -34,6 +35,8 @@ const Scriptures = (function () {
     let crumbsElement;
     let crumbsComplementElement;
     let navElement;
+    let requestedBookId;
+    let requestedChapter;
     let volumes;
 
     /*------------------------------------------------------------------
@@ -41,10 +44,12 @@ const Scriptures = (function () {
      */
     let ajax;
     let bookChapterValid;
+    let breadcrumbsNode;
     let buildBooksGrid;
     let buildChaptersGrid;
     let buildVolumesGrid;
     let cacheBooks;
+    let configureBreadcrumbs;
     let encodedScripturesUrl;
     let getScripturesFailure;
     let getScripturesSuccess;
@@ -106,6 +111,22 @@ const Scriptures = (function () {
         }
 
         return false;
+    };
+
+    breadcrumbsNode = function (textContent, href) {
+        const listItem = Html.domNode(Html.TAG_LIST_ITEM);
+        const textNode = document.createTextNode(textContent);
+
+        if (href === undefined) {
+            listItem.appendChild(textNode);
+        } else {
+            const hyperlink = Html.hyperlinkNode(href);
+
+            hyperlink.appendChild(textNode);
+            listItem.appendChild(hyperlink);
+        }
+
+        return listItem;
     };
 
     buildBooksGrid = function (navigationNode, volume) {
@@ -185,6 +206,38 @@ const Scriptures = (function () {
         }
     };
 
+    configureBreadcrumbs = function (volumeId, bookId, chapter) {
+        const crumbs = Html.domNode(Html.TAG_UNORDERED_LIST);
+
+        if (volumeId === undefined) {
+            crumbs.appendChild(breadcrumbsNode(HOME_BREADCRUMB));
+        } else {
+            crumbs.appendChild(breadcrumbsNode(HOME_BREADCRUMB, "#"));
+
+            if (bookId === undefined) {
+                crumbs.appendChild(breadcrumbsNode(volumes[volumeId - 1].backName));
+            } else {
+                const book = books[bookId];
+                const volume = volumes[book.parentBookId - 1];
+
+                crumbs.appendChild(breadcrumbsNode(volume.backName, `#${volume.id}`));
+
+                if (chapter === undefined) {
+                    crumbs.appendChild(breadcrumbsNode(book.backName));
+                } else {
+                    crumbs.appendChild(breadcrumbsNode(book.backName, `#${volume.id}:${bookId}`));
+
+                    if (book.numChapters > 0) {
+                        crumbs.appendChild(breadcrumbsNode(chapter));
+                    }
+                }
+            }
+        }
+
+        Html.replaceNodeContent(crumbsElement, crumbs);
+        Html.replaceNodeContent(crumbsComplementElement, crumbs.cloneNode(true));
+    };
+
     encodedScripturesUrl = function (bookId, chapter, verses, isJst) {
         if (bookId !== undefined && chapter !== undefined) {
             let options = "";
@@ -210,7 +263,7 @@ const Scriptures = (function () {
 
     getScripturesSuccess = function (chapterHtml) {
         navElement.innerHTML = chapterHtml;
-        // NEEDSWORK: update breadcrumbs
+        configureBreadcrumbs(0, requestedBookId, requestedChapter);
         // NEEDSWORK: update pins on the map
     };
 
@@ -236,11 +289,14 @@ const Scriptures = (function () {
 
             buildChaptersGrid(chaptersNavigationNode, book);
             Html.replaceNodeContent(navElement, chaptersNavigationNode);
-            // NEEDSWORK: configure breadcrumbs
+            configureBreadcrumbs(book.parentBookId, bookId);
         }
     };
 
     navigateChapter = function (bookId, chapter) {
+        requestedBookId = bookId;
+        requestedChapter = chapter;
+
         ajax(
             encodedScripturesUrl(bookId, chapter),
             getScripturesSuccess,
@@ -255,7 +311,7 @@ const Scriptures = (function () {
         buildVolumesGrid(scripturesNavigationNode, volumeId);
         Html.replaceNodeContent(navElement, scripturesNavigationNode);
 
-        // NEEDSWORK: configure the breadcrumbs to match
+        configureBreadcrumbs(volumeId);
     };
 
     volumeIdIsValid = function (volumeId) {

@@ -368,3 +368,36 @@ span.verse {
     margin-bottom: 0.4em;
     line-height: 1.45em;
 }
+
+#crumbs ul,
+#crumbs-complement ul {
+    padding: 0;
+    margin: 0;
+    line-height: 1;
+}
+
+#crumbs li,
+#crumbs-complement li {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    display: inline-block;
+}
+
+#scrip-header a:link,
+#scrip-header a:visited,
+#scrip-header a:active {
+    color: white;
+    text-decoration: none;
+}
+
+#scrip-header a:hover {
+    color: #d0d0ff;
+    text-decoration: underline;
+}
+
+#crumbs li:not(:first-child)::before,
+#crumbs-complement li:not(:first-child)::before {
+    content: ">";
+    padding: 0.3em;
+}
