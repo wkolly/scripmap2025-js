@@ -256,6 +256,7 @@ div.chapterheading {
     text-align: center;
     text-transform: uppercase;
     margin: 0.4em;
+    padding-top: 1em;
 }
 
 div.chapterheading .big {
