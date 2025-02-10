@@ -27,6 +27,10 @@ const Scriptures = (function () {
     const URL_BOOKS = `${URL_BASE}model/books.php`;
     const URL_SCRIPTURES = `${URL_BASE}mapgetscrip2.php`;
     const URL_VOLUMES = `${URL_BASE}model/volumes.php`;
+    const VIEW_ALTITUDE_DEFAULT = 5000;
+    const VIEW_ALTITUDE_CONVERSION_RATIO = 591657550.5;
+    const VIEW_ALTITUDE_ZOOM_ADJUST = -2;
+    const ZOOM_RATIO = 450;
 
     /*------------------------------------------------------------------
      *                      PRIVATE VARIABLES
@@ -60,12 +64,14 @@ const Scriptures = (function () {
     let navigateVolume;
     let volumeIdIsValid;
     let volumeTitleNode;
+    let zoomLevelForAltitude;
 
     /*------------------------------------------------------------------
      *                      PUBLIC METHOD DECLARATIONS
      */
     let init;
     let onHashChanged;
+    let panAndZoom;
 
     /*------------------------------------------------------------------
      *                      PRIVATE METHODS
@@ -329,6 +335,18 @@ const Scriptures = (function () {
         return titleNode;
     };
 
+    zoomLevelForAltitude = function (viewAltitude) {
+        let zoomLevel = viewAltitude / ZOOM_RATIO;
+
+        if (viewAltitude !== VIEW_ALTITUDE_DEFAULT) {
+            zoomLevel =
+                Math.log2(VIEW_ALTITUDE_CONVERSION_RATIO / viewAltitude) +
+                VIEW_ALTITUDE_ZOOM_ADJUST;
+        }
+
+        return zoomLevel;
+    };
+
     /*------------------------------------------------------------------
      *                      PUBLIC METHODS
      */
@@ -394,9 +412,15 @@ const Scriptures = (function () {
         }
     };
 
+    panAndZoom = function (lat, lng, viewAltitude) {
+        map.panTo({ lat, lng });
+        map.setZoom(zoomLevelForAltitude(viewAltitude));
+    };
+
     return {
         init,
-        onHashChanged
+        onHashChanged,
+        panAndZoom
     };
 })();
 

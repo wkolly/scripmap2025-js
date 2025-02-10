@@ -115,6 +115,16 @@
                 Scriptures.init(() => {
                     window.addEventListener("hashchange", Scriptures.onHashChanged);
                     Scriptures.onHashChanged();
+                    window.showLocation = function (
+                        geotagId,
+                        placename,
+                        latitude,
+                        longitude,
+                        viewAltitude,
+                        flag
+                    ) {
+                        Scriptures.panAndZoom(latitude, longitude, viewAltitude);
+                    };
                 });
             });
         </script>
