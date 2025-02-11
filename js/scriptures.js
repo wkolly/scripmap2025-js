@@ -22,6 +22,7 @@ const Scriptures = (function () {
     const ID_CRUMBS_COMPLEMENT = "crumbs-complement";
     const ID_NAV_ELEMENT = "nav-root";
     const ID_SCRIPTURES_NAVIGATION = "scripnav";
+    const LAT_LON_PARSER = /\((.*),'(.*)',(.*),(.*),(.*),'(.*)'\)/;
     const SKIP_JSON_PARSE = true;
     const URL_BASE = "https://scriptures.byu.edu/mapscrip/";
     const URL_BOOKS = `${URL_BASE}model/books.php`;
@@ -55,13 +56,16 @@ const Scriptures = (function () {
     let cacheBooks;
     let configureBreadcrumbs;
     let encodedScripturesUrl;
+    let extractGeoplaces;
     let getScripturesFailure;
     let getScripturesSuccess;
     let hashParameters;
+    let mergePlacename;
     let navigateBook;
     let navigateChapter;
     let navigateHome;
     let navigateVolume;
+    let placenameWithFlag;
     let volumeIdIsValid;
     let volumeTitleNode;
     let zoomLevelForAltitude;
@@ -260,6 +264,37 @@ const Scriptures = (function () {
         }
     };
 
+    extractGeoplaces = function () {
+        const uniqueGeoplaces = {};
+        const placeLinks = document.querySelectorAll("a[onclick^='showLocation('");
+
+        placeLinks.forEach((placeLink) => {
+            const matches = LAT_LON_PARSER.exec(placeLink.getAttribute("onclick"));
+
+            if (matches) {
+                const [_, __, name, latitude, longitude, viewAltitude, flag] = matches;
+
+                let placename = placenameWithFlag(name, flag);
+
+                const key = `${latitude}|${longitude}`;
+                const value = {
+                    latitude: Number(latitude),
+                    longitude: Number(longitude),
+                    placename,
+                    viewAltitude: Number(viewAltitude)
+                };
+
+                if (uniqueGeoplaces[key] !== undefined) {
+                    mergePlacename(uniqueGeoplaces[key], name);
+                } else {
+                    uniqueGeoplaces[key] = value;
+                }
+            }
+        });
+
+        return uniqueGeoplaces;
+    };
+
     getScripturesFailure = function () {
         Html.replaceNodeContent(
             navElement,
@@ -279,6 +314,12 @@ const Scriptures = (function () {
         }
 
         return [];
+    };
+
+    mergePlacename = function (geoplace, name) {
+        if (!geoplace.placename.includes(name)) {
+            geoplace.placename += `, ${name}`;
+        }
     };
 
     navigateBook = function (bookId) {
@@ -318,6 +359,16 @@ const Scriptures = (function () {
         Html.replaceNodeContent(navElement, scripturesNavigationNode);
 
         configureBreadcrumbs(volumeId);
+    };
+
+    placenameWithFlag = function (name, flag) {
+        let placename = name;
+
+        if (typeof flag === "string" && flag.length > 0) {
+            placename += ` ${flag}`;
+        }
+
+        return placename;
     };
 
     volumeIdIsValid = function (volumeId) {
