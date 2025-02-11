@@ -39,6 +39,7 @@ const Scriptures = (function () {
     let books;
     let crumbsElement;
     let crumbsComplementElement;
+    let mapMarkers = [];
     let navElement;
     let requestedBookId;
     let requestedChapter;
@@ -54,9 +55,12 @@ const Scriptures = (function () {
     let buildChaptersGrid;
     let buildVolumesGrid;
     let cacheBooks;
+    let clearMapMarkers;
     let configureBreadcrumbs;
+    let createMapMarkers;
     let encodedScripturesUrl;
     let extractGeoplaces;
+    let firstAltitude;
     let getScripturesFailure;
     let getScripturesSuccess;
     let hashParameters;
@@ -66,9 +70,11 @@ const Scriptures = (function () {
     let navigateHome;
     let navigateVolume;
     let placenameWithFlag;
+    let updateMarkers;
     let volumeIdIsValid;
     let volumeTitleNode;
     let zoomLevelForAltitude;
+    let zoomMapToFitMarkers;
 
     /*------------------------------------------------------------------
      *                      PUBLIC METHOD DECLARATIONS
@@ -216,6 +222,14 @@ const Scriptures = (function () {
         }
     };
 
+    clearMapMarkers = function () {
+        mapMarkers.forEach((marker) => {
+            marker.setMap(null);
+        });
+
+        mapMarkers = [];
+    };
+
     configureBreadcrumbs = function (volumeId, bookId, chapter) {
         const crumbs = Html.domNode(Html.TAG_UNORDERED_LIST);
 
@@ -246,6 +260,18 @@ const Scriptures = (function () {
 
         Html.replaceNodeContent(crumbsElement, crumbs);
         Html.replaceNodeContent(crumbsComplementElement, crumbs.cloneNode(true));
+    };
+
+    createMapMarkers = function (geoplaces) {
+        Object.values(geoplaces).forEach((geoplace) => {
+            const marker = new google.maps.marker.AdvancedMarkerElement({
+                map: map,
+                position: { lat: geoplace.latitude, lng: geoplace.longitude },
+                title: geoplace.placename
+            });
+
+            mapMarkers.push(marker);
+        });
     };
 
     encodedScripturesUrl = function (bookId, chapter, verses, isJst) {
@@ -305,7 +331,7 @@ const Scriptures = (function () {
     getScripturesSuccess = function (chapterHtml) {
         navElement.innerHTML = chapterHtml;
         configureBreadcrumbs(0, requestedBookId, requestedChapter);
-        // NEEDSWORK: update pins on the map
+        updateMarkers(extractGeoplaces());
     };
 
     hashParameters = function () {
@@ -369,6 +395,21 @@ const Scriptures = (function () {
         }
 
         return placename;
+    };
+
+    updateMarkers = function (geoplaces) {
+        if (!mapIsLoaded) {
+            // Call this function again in half a second
+            window.setTimeout(() => {
+                updateMarkers(geoplaces);
+            }, 500);
+
+            return;
+        }
+
+        clearMapMarkers();
+        createMapMarkers(geoplaces);
+        // zoomMapToFitMarkers(firstAltitude(geoplaces));
     };
 
     volumeIdIsValid = function (volumeId) {

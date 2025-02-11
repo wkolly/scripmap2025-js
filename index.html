@@ -68,11 +68,13 @@
             });
 
             let map;
+            let mapIsLoaded = false;
 
             async function initMap() {
                 const position = { lat: 31.778407, lng: 35.234725 };
                 const { Map } = await google.maps.importLibrary("maps");
-                const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+
+                await google.maps.importLibrary("marker");
 
                 map = new Map(document.getElementById("map"), {
                     zoom: 8,
@@ -91,11 +93,7 @@
                     }
                 });
 
-                const marker = new AdvancedMarkerElement({
-                    map: map,
-                    position: position,
-                    title: "Jerusalem"
-                });
+                mapIsLoaded = true;
             }
 
             initMap();
