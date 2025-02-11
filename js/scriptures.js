@@ -72,8 +72,10 @@ const Scriptures = (function () {
     let navigateBook;
     let navigateChapter;
     let navigateHome;
-    let navigateVolume;
+    let nextChapter;
     let placenameWithFlag;
+    let previousChapter;
+    let titleForBookChapter;
     let updateMarkers;
     let volumeIdIsValid;
     let volumeTitleNode;
@@ -421,6 +423,37 @@ const Scriptures = (function () {
         configureBreadcrumbs(volumeId);
     };
 
+    nextChapter = function (bookId, chapter) {
+        let book = books[bookId];
+
+        if (book !== undefined) {
+            if (chapter < book.numChapters) {
+                // This is the easy case: just add one to the current chapter
+                return [bookId, chapter + 1, titleForBookChapter(book, chapter + 1)];
+            }
+
+            let nextBook = books[bookId + 1];
+
+            if (next !== undefined) {
+                // "Next" is first chapter of next book
+                let nextChapterValue = 0;
+
+                if (nextBook.numChapters > 0) {
+                    nextChapterValue = 1;
+                }
+
+                return [
+                    nextBook.id,
+                    nextChapterValue,
+                    titleForBookChapter(nextBook, nextChapterValue)
+                ];
+            }
+        }
+
+        // There is no next chapter
+        return [];
+    };
+
     placenameWithFlag = function (name, flag) {
         let placename = name;
 
@@ -429,6 +462,36 @@ const Scriptures = (function () {
         }
 
         return placename;
+    };
+
+    previousChapter = function (bookId, chapter) {
+        if (chapter > 1) {
+            return [bookId, chapter - 1, titleForBookChapter(book, chapter - 1)];
+        }
+
+        let previousBook = books[bookId - 1];
+
+        if (previousBook !== undefined) {
+            // "Previous" is last chapter of previous book
+            return [
+                previousBook.id,
+                previousBook.numChapters,
+                titleForBookChapter(previousBook, previousBook.numChapters)
+            ];
+        }
+
+        // There is no previous chapter
+        return [];
+    };
+
+    titleForBookChapter = function (book, chapter) {
+        if (book !== undefined) {
+            if (chapter > 0) {
+                return `${book.tocName} ${chapter}`;
+            }
+
+            return book.tocName;
+        }
     };
 
     updateMarkers = function (geoplaces) {
@@ -493,7 +556,7 @@ const Scriptures = (function () {
     };
 
     zoomToOneMarker = function (marker, viewAltitude) {
-        panAndZoom(marker.position.lat(), marker.position.lng(), viewAltitude);
+        panAndZoom(marker.position.lat, marker.position.lng, viewAltitude);
     };
 
     /*------------------------------------------------------------------
