@@ -402,3 +402,29 @@ span.verse {
     content: ">";
     padding: 0.3em;
 }
+
+.geoplace-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    font-family: Arial, sans-serif;
+}
+
+.label {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--header-background-color);
+    text-shadow: 1px 1px 1px white, -1px -1px 1px white, 1px -1px 1px white, -1px 1px 1px white;
+    white-space: nowrap;
+    margin-bottom: 5px;
+}
+
+.pin {
+    width: 20px;
+    height: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 64' width='48' height='64'%3E%3Cpath fill='%23EA4335' d='M24 64C24 64 0 36.5 0 22C0 9.85 10.75 0 24 0C37.25 0 48 9.85 48 22C48 36.5 24 64 24 64Z'/%3E%3Cpath fill='none' stroke='%233f2000' stroke-width='2' d='M24 63C24 63 1 36 1 22C1 10.4 11.4 1 24 1C36.6 1 47 10.4 47 22C47 36 24 63 24 63Z'/%3E%3Ccircle cx='24' cy='22' r='8' fill='%233f2000'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}

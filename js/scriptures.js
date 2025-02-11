@@ -16,6 +16,9 @@ const Scriptures = (function () {
     const CLASS_BOOKS = "books";
     const CLASS_BUTTON = "waves-effect waves-custom waves-ripple btn";
     const CLASS_CHAPTER = "chapter";
+    const CLASS_GEOPLACE_MARKER = "geoplace-marker";
+    const CLASS_LABEL = "label";
+    const CLASS_PIN = "pin";
     const CLASS_VOLUME = "volume";
     const HOME_BREADCRUMB = "The Scriptures";
     const ID_CRUMBS = "crumbs";
@@ -50,6 +53,7 @@ const Scriptures = (function () {
      */
     let ajax;
     let bookChapterValid;
+    let boundsForCurrentMarkers;
     let breadcrumbsNode;
     let buildBooksGrid;
     let buildChaptersGrid;
@@ -75,6 +79,8 @@ const Scriptures = (function () {
     let volumeTitleNode;
     let zoomLevelForAltitude;
     let zoomMapToFitMarkers;
+    let zoomToFitMarkerBounds;
+    let zoomToOneMarker;
 
     /*------------------------------------------------------------------
      *                      PUBLIC METHOD DECLARATIONS
@@ -127,6 +133,16 @@ const Scriptures = (function () {
         }
 
         return false;
+    };
+
+    boundsForCurrentMarkers = function () {
+        const bounds = new google.maps.LatLngBounds();
+
+        mapMarkers.forEach((marker) => {
+            bounds.extend(marker.position);
+        });
+
+        return bounds;
     };
 
     breadcrumbsNode = function (textContent, href) {
@@ -264,10 +280,18 @@ const Scriptures = (function () {
 
     createMapMarkers = function (geoplaces) {
         Object.values(geoplaces).forEach((geoplace) => {
+            const markerContent = Html.domNode(Html.TAG_DIV, CLASS_GEOPLACE_MARKER);
+
+            markerContent.appendChild(Html.domNode(Html.TAG_DIV, CLASS_PIN));
+            markerContent.appendChild(
+                Html.domNode(Html.TAG_DIV, CLASS_LABEL, null, geoplace.placename)
+            );
+
             const marker = new google.maps.marker.AdvancedMarkerElement({
                 map: map,
                 position: { lat: geoplace.latitude, lng: geoplace.longitude },
-                title: geoplace.placename
+                title: geoplace.placename,
+                content: markerContent
             });
 
             mapMarkers.push(marker);
@@ -319,6 +343,16 @@ const Scriptures = (function () {
         });
 
         return uniqueGeoplaces;
+    };
+
+    firstAltitude = function (geoplaces) {
+        // Return the first viewAltitude we can find in the dictionary
+
+        const keys = Object.keys(geoplaces);
+
+        if (keys.length > 0) {
+            return geoplaces[keys[0]].viewAltitude;
+        }
     };
 
     getScripturesFailure = function () {
@@ -409,7 +443,7 @@ const Scriptures = (function () {
 
         clearMapMarkers();
         createMapMarkers(geoplaces);
-        // zoomMapToFitMarkers(firstAltitude(geoplaces));
+        zoomMapToFitMarkers(firstAltitude(geoplaces));
     };
 
     volumeIdIsValid = function (volumeId) {
@@ -437,6 +471,29 @@ const Scriptures = (function () {
         }
 
         return zoomLevel;
+    };
+
+    zoomMapToFitMarkers = function (viewAltitude) {
+        if (mapMarkers.length > 0) {
+            if (mapMarkers.length === 1 && viewAltitude) {
+                const marker = mapMarkers[0];
+
+                zoomToOneMarker(marker, viewAltitude);
+            } else {
+                zoomToFitMarkerBounds();
+            }
+        }
+    };
+
+    zoomToFitMarkerBounds = function () {
+        const bounds = boundsForCurrentMarkers();
+
+        map.panTo(bounds.getCenter());
+        map.fitBounds(bounds);
+    };
+
+    zoomToOneMarker = function (marker, viewAltitude) {
+        panAndZoom(marker.position.lat(), marker.position.lng(), viewAltitude);
     };
 
     /*------------------------------------------------------------------
