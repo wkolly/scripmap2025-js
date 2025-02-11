@@ -17,10 +17,15 @@ const Scriptures = (function () {
     const CLASS_BUTTON = "waves-effect waves-custom waves-ripple btn";
     const CLASS_CHAPTER = "chapter";
     const CLASS_GEOPLACE_MARKER = "geoplace-marker";
+    const CLASS_ICON = "material-icons";
     const CLASS_LABEL = "label";
+    const CLASS_NAV_HEADING = "navheading";
+    const CLASS_NEXT_PREV = "nextprev";
     const CLASS_PIN = "pin";
     const CLASS_VOLUME = "volume";
     const HOME_BREADCRUMB = "The Scriptures";
+    const ICON_NEXT = "skip_next";
+    const ICON_PREVIOUS = "skip_previous";
     const ID_CRUMBS = "crumbs";
     const ID_CRUMBS_COMPLEMENT = "crumbs-complement";
     const ID_NAV_ELEMENT = "nav-root";
@@ -59,6 +64,7 @@ const Scriptures = (function () {
     let buildChaptersGrid;
     let buildVolumesGrid;
     let cacheBooks;
+    let chapterNavigationNode;
     let clearMapMarkers;
     let configureBreadcrumbs;
     let createMapMarkers;
@@ -68,11 +74,13 @@ const Scriptures = (function () {
     let getScripturesFailure;
     let getScripturesSuccess;
     let hashParameters;
+    let injectNextPrevious;
     let mergePlacename;
     let navigateBook;
     let navigateChapter;
     let navigateHome;
     let nextChapter;
+    let nextPreviousNode;
     let placenameWithFlag;
     let previousChapter;
     let titleForBookChapter;
@@ -240,6 +248,17 @@ const Scriptures = (function () {
         }
     };
 
+    chapterNavigationNode = function (parameters, icon) {
+        // Build a node for next/previous chapter navigation
+
+        const [bookId, chapter, title] = parameters;
+        const node = Html.hyperlinkNode(`#0:${bookId}:${chapter}`, title);
+
+        node.appendChild(Html.domNode(Html.TAG_I, CLASS_ICON, null, icon));
+
+        return node;
+    };
+
     clearMapMarkers = function () {
         mapMarkers.forEach((marker) => {
             marker.setMap(null);
@@ -366,6 +385,7 @@ const Scriptures = (function () {
 
     getScripturesSuccess = function (chapterHtml) {
         navElement.innerHTML = chapterHtml;
+        injectNextPrevious();
         configureBreadcrumbs(0, requestedBookId, requestedChapter);
         updateMarkers(extractGeoplaces());
     };
@@ -376,6 +396,19 @@ const Scriptures = (function () {
         }
 
         return [];
+    };
+
+    injectNextPrevious = function () {
+        // Find next/previous chapter information and add buttons to
+        // any "navheading" elements for next/previous chapter navigation
+
+        const previousParameters = previousChapter(requestedBookId, requestedChapter);
+        const nextParameters = nextChapter(requestedBookId, requestedChapter);
+        const navheadingNodes = Array.from(document.getElementsByClassName(CLASS_NAV_HEADING));
+
+        navheadingNodes.forEach((element) => {
+            element.appendChild(nextPreviousNode(previousParameters, nextParameters));
+        });
     };
 
     mergePlacename = function (geoplace, name) {
@@ -454,6 +487,20 @@ const Scriptures = (function () {
         return [];
     };
 
+    nextPreviousNode = function (previousParameters, nextParameters) {
+        const nextPreviousNode = Html.domNode(Html.TAG_DIV, CLASS_NEXT_PREV);
+
+        if (Array.isArray(previousParameters) && previousParameters.length > 0) {
+            nextPreviousNode.appendChild(chapterNavigationNode(previousParameters, ICON_PREVIOUS));
+        }
+
+        if (Array.isArray(nextParameters) && nextParameters.length > 0) {
+            nextPreviousNode.appendChild(chapterNavigationNode(nextParameters, ICON_NEXT));
+        }
+
+        return nextPreviousNode;
+    };
+
     placenameWithFlag = function (name, flag) {
         let placename = name;
 
@@ -465,6 +512,8 @@ const Scriptures = (function () {
     };
 
     previousChapter = function (bookId, chapter) {
+        let book = books[bookId];
+
         if (chapter > 1) {
             return [bookId, chapter - 1, titleForBookChapter(book, chapter - 1)];
         }
