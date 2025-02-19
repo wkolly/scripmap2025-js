@@ -10,6 +10,7 @@
 /*----------------------------------------------------------------------
  *                      IMPORTS
  */
+import { configureBreadcrumbs } from "./breadcrumbs.js";
 import {
     decodeEntities,
     decorateNode,
@@ -18,9 +19,7 @@ import {
     replaceNodeContent,
     TAG_DIV,
     TAG_HEADER5,
-    TAG_I,
-    TAG_LIST_ITEM,
-    TAG_UNORDERED_LIST
+    TAG_I
 } from "./html.js";
 import { books, volumes, apiInit, requestChapterText, volumeIdIsValid } from "./mapScripApi.js";
 
@@ -37,15 +36,11 @@ const CLASS_NAV_HEADING = "navheading";
 const CLASS_NEXT_PREV = "nextprev";
 const CLASS_PIN = "pin";
 const CLASS_VOLUME = "volume";
-const HOME_BREADCRUMB = "The Scriptures";
 const ICON_NEXT = "skip_next";
 const ICON_PREVIOUS = "skip_previous";
-const ID_CRUMBS = "crumbs";
-const ID_CRUMBS_COMPLEMENT = "crumbs-complement";
 const ID_NAV_ELEMENT = "nav-root";
 const ID_SCRIPTURES_NAVIGATION = "scripnav";
 const LAT_LON_PARSER = /\((.*),'(.*)',(.*),(.*),(.*),'(.*)'\)/;
-const SKIP_JSON_PARSE = true;
 const VIEW_ALTITUDE_DEFAULT = 5000;
 const VIEW_ALTITUDE_CONVERSION_RATIO = 591657550.5;
 const VIEW_ALTITUDE_ZOOM_ADJUST = -2;
@@ -54,8 +49,6 @@ const ZOOM_RATIO = 450;
 /*------------------------------------------------------------------
  *                      PRIVATE VARIABLES
  */
-let crumbsElement;
-let crumbsComplementElement;
 let mapMarkers = [];
 let navElement;
 let requestedBookId;
@@ -66,13 +59,11 @@ let requestedChapter;
  */
 let bookChapterValid;
 let boundsForCurrentMarkers;
-let breadcrumbsNode;
 let buildBooksGrid;
 let buildChaptersGrid;
 let buildVolumesGrid;
 let chapterNavigationNode;
 let clearMapMarkers;
-let configureBreadcrumbs;
 let createMapMarkers;
 let extractGeoplaces;
 let firstAltitude;
@@ -125,22 +116,6 @@ boundsForCurrentMarkers = function () {
     });
 
     return bounds;
-};
-
-breadcrumbsNode = function (textContent, href) {
-    const listItem = domNode(TAG_LIST_ITEM);
-    const textNode = document.createTextNode(textContent);
-
-    if (href === undefined) {
-        listItem.appendChild(textNode);
-    } else {
-        const hyperlink = hyperlinkNode(href);
-
-        hyperlink.appendChild(textNode);
-        listItem.appendChild(hyperlink);
-    }
-
-    return listItem;
 };
 
 buildBooksGrid = function (navigationNode, volume) {
@@ -210,38 +185,6 @@ clearMapMarkers = function () {
     });
 
     mapMarkers = [];
-};
-
-configureBreadcrumbs = function (volumeId, bookId, chapter) {
-    const crumbs = domNode(TAG_UNORDERED_LIST);
-
-    if (volumeId === undefined) {
-        crumbs.appendChild(breadcrumbsNode(HOME_BREADCRUMB));
-    } else {
-        crumbs.appendChild(breadcrumbsNode(HOME_BREADCRUMB, "#"));
-
-        if (bookId === undefined) {
-            crumbs.appendChild(breadcrumbsNode(volumes[volumeId - 1].backName));
-        } else {
-            const book = books[bookId];
-            const volume = volumes[book.parentBookId - 1];
-
-            crumbs.appendChild(breadcrumbsNode(volume.backName, `#${volume.id}`));
-
-            if (chapter === undefined) {
-                crumbs.appendChild(breadcrumbsNode(book.backName));
-            } else {
-                crumbs.appendChild(breadcrumbsNode(book.backName, `#${volume.id}:${bookId}`));
-
-                if (book.numChapters > 0) {
-                    crumbs.appendChild(breadcrumbsNode(chapter));
-                }
-            }
-        }
-    }
-
-    replaceNodeContent(crumbsElement, crumbs);
-    replaceNodeContent(crumbsComplementElement, crumbs.cloneNode(true));
 };
 
 createMapMarkers = function (geoplaces) {
@@ -522,8 +465,6 @@ export const init = function (callback) {
     apiInit(callback);
 
     // look up all the DOM elements we want to manipulate
-    crumbsElement = document.getElementById(ID_CRUMBS);
-    crumbsComplementElement = document.getElementById(ID_CRUMBS_COMPLEMENT);
     navElement = document.getElementById(ID_NAV_ELEMENT);
 };
 
