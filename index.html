@@ -98,9 +98,9 @@
 
             initMap();
         </script>
-        <script defer src="./js/html.js"></script>
-        <script defer src="./js/scriptures.js"></script>
-        <script type="text/javascript">
+        <script type="module">
+            import { init, onHashChanged, panAndZoom } from "./js/scriptures.js";
+
             function ready(readyListener) {
                 if (document.readyState === "loading") {
                     document.addEventListener("DOMContentLoaded", readyListener);
@@ -110,9 +110,9 @@
             }
 
             ready(() => {
-                Scriptures.init(() => {
-                    window.addEventListener("hashchange", Scriptures.onHashChanged);
-                    Scriptures.onHashChanged();
+                init(() => {
+                    window.addEventListener("hashchange", onHashChanged);
+                    onHashChanged();
                     window.showLocation = function (
                         geotagId,
                         placename,
@@ -121,7 +121,7 @@
                         viewAltitude,
                         flag
                     ) {
-                        Scriptures.panAndZoom(latitude, longitude, viewAltitude);
+                        panAndZoom(latitude, longitude, viewAltitude);
                     };
                 });
             });
