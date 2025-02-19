@@ -22,6 +22,7 @@ import {
     TAG_LIST_ITEM,
     TAG_UNORDERED_LIST
 } from "./html.js";
+import { books, volumes, apiInit, requestChapterText, volumeIdIsValid } from "./mapScripApi.js";
 
 /*------------------------------------------------------------------
  *                      CONSTANTS
@@ -45,10 +46,6 @@ const ID_NAV_ELEMENT = "nav-root";
 const ID_SCRIPTURES_NAVIGATION = "scripnav";
 const LAT_LON_PARSER = /\((.*),'(.*)',(.*),(.*),(.*),'(.*)'\)/;
 const SKIP_JSON_PARSE = true;
-const URL_BASE = "https://scriptures.byu.edu/mapscrip/";
-const URL_BOOKS = `${URL_BASE}model/books.php`;
-const URL_SCRIPTURES = `${URL_BASE}mapgetscrip2.php`;
-const URL_VOLUMES = `${URL_BASE}model/volumes.php`;
 const VIEW_ALTITUDE_DEFAULT = 5000;
 const VIEW_ALTITUDE_CONVERSION_RATIO = 591657550.5;
 const VIEW_ALTITUDE_ZOOM_ADJUST = -2;
@@ -57,31 +54,26 @@ const ZOOM_RATIO = 450;
 /*------------------------------------------------------------------
  *                      PRIVATE VARIABLES
  */
-let books;
 let crumbsElement;
 let crumbsComplementElement;
 let mapMarkers = [];
 let navElement;
 let requestedBookId;
 let requestedChapter;
-let volumes;
 
 /*------------------------------------------------------------------
  *                      PRIVATE METHOD DECLARATIONS
  */
-let ajax;
 let bookChapterValid;
 let boundsForCurrentMarkers;
 let breadcrumbsNode;
 let buildBooksGrid;
 let buildChaptersGrid;
 let buildVolumesGrid;
-let cacheBooks;
 let chapterNavigationNode;
 let clearMapMarkers;
 let configureBreadcrumbs;
 let createMapMarkers;
-let encodedScripturesUrl;
 let extractGeoplaces;
 let firstAltitude;
 let getScripturesFailure;
@@ -98,7 +90,6 @@ let placenameWithFlag;
 let previousChapter;
 let titleForBookChapter;
 let updateMarkers;
-let volumeIdIsValid;
 let volumeTitleNode;
 let zoomLevelForAltitude;
 let zoomMapToFitMarkers;
@@ -108,31 +99,6 @@ let zoomToOneMarker;
 /*------------------------------------------------------------------
  *                      PRIVATE METHODS
  */
-ajax = async function (url, successCallback, failureCallback, skipJsonParse) {
-    try {
-        const response = await fetch(url);
-        let data;
-
-        if (!response.ok) {
-            throw new Error(`HTTP error, status: ${response.status}`);
-        }
-
-        if (skipJsonParse) {
-            data = await response.text();
-        } else {
-            data = await response.json();
-        }
-
-        if (typeof successCallback === "function") {
-            successCallback(data);
-        }
-    } catch (error) {
-        if (typeof failureCallback === "function") {
-            failureCallback(request);
-        }
-    }
-};
-
 bookChapterValid = function (bookId, chapter) {
     const book = books[bookId];
 
@@ -227,33 +193,6 @@ buildVolumesGrid = function (navigationNode, volumeId) {
     });
 };
 
-cacheBooks = function (callback) {
-    // We have both volumes and books from the server, so here we
-    // build an array of books for each volume so it's easy to get
-    // the books when we have a volume object.  This is helpful,
-    // for example, when building the navigation grid of books for
-    // a given volume.
-
-    volumes.forEach(function (volume) {
-        let volumeBooks = [];
-        let bookId = volume.minBookId;
-
-        while (bookId <= volume.maxBookId) {
-            volumeBooks.push(books[bookId]);
-            bookId += 1;
-        }
-
-        volume.books = volumeBooks;
-    });
-
-    Object.freeze(books);
-    Object.freeze(volumes);
-
-    if (typeof callback === "function") {
-        callback();
-    }
-};
-
 chapterNavigationNode = function (parameters, icon) {
     // Build a node for next/previous chapter navigation
 
@@ -323,22 +262,6 @@ createMapMarkers = function (geoplaces) {
     });
 };
 
-encodedScripturesUrl = function (bookId, chapter, verses, isJst) {
-    if (bookId !== undefined && chapter !== undefined) {
-        let options = "";
-
-        if (verses !== undefined) {
-            options += verses;
-        }
-
-        if (isJst !== undefined) {
-            options += "&jst=JST";
-        }
-
-        return `${URL_SCRIPTURES}?book=${bookId}&chap=${chapter}&verses${options}`;
-    }
-};
-
 extractGeoplaces = function () {
     const uniqueGeoplaces = {};
     const placeLinks = document.querySelectorAll("a[onclick^='showLocation('");
@@ -384,8 +307,9 @@ getScripturesFailure = function () {
     replaceNodeContent(navElement, document.createTextNode("Unable to retrieve chapter contents."));
 };
 
-getScripturesSuccess = function (chapterHtml) {
-    navElement.innerHTML = chapterHtml;
+getScripturesSuccess = async function (chapterHtml) {
+    navElement.innerHTML = await chapterHtml;
+
     injectNextPrevious();
     configureBreadcrumbs(0, requestedBookId, requestedChapter);
     updateMarkers(extractGeoplaces());
@@ -436,12 +360,7 @@ navigateChapter = function (bookId, chapter) {
     requestedBookId = bookId;
     requestedChapter = chapter;
 
-    ajax(
-        encodedScripturesUrl(bookId, chapter),
-        getScripturesSuccess,
-        getScripturesFailure,
-        SKIP_JSON_PARSE
-    );
+    requestChapterText(bookId, chapter, getScripturesSuccess, getScripturesFailure);
 };
 
 navigateHome = function (volumeId) {
@@ -551,10 +470,6 @@ updateMarkers = function (geoplaces) {
     zoomMapToFitMarkers(firstAltitude(geoplaces));
 };
 
-volumeIdIsValid = function (volumeId) {
-    return volumes.map((volume) => volume.id).includes(volumeId);
-};
-
 volumeTitleNode = function (volume) {
     const titleNode = domNode(TAG_DIV, CLASS_VOLUME);
     const hyperlink = hyperlinkNode(`#${volume.id}`, volume.fullName);
@@ -604,16 +519,7 @@ zoomToOneMarker = function (marker, viewAltitude) {
  *                      PUBLIC METHODS
  */
 export const init = function (callback) {
-    Promise.all(
-        [URL_VOLUMES, URL_BOOKS].map((url) => fetch(url).then((response) => response.json()))
-    ).then(([jsonVolumes, jsonBooks]) => {
-        if (jsonVolumes !== undefined && jsonBooks !== undefined) {
-            volumes = jsonVolumes;
-            books = jsonBooks;
-
-            cacheBooks(callback);
-        }
-    });
+    apiInit(callback);
 
     // look up all the DOM elements we want to manipulate
     crumbsElement = document.getElementById(ID_CRUMBS);
