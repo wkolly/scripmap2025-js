@@ -11,8 +11,9 @@
  */
 import { configureBreadcrumbs } from "./breadcrumbs.js";
 import { domNode, hyperlinkNode, replaceNodeContent, TAG_DIV, TAG_I } from "./html.js";
+import { setupMarkers } from "./mapHelper.js";
 import { books, requestChapterText } from "./mapScripApi.js";
-import { extractGeoplaces, navElement, updateMarkers } from "./scriptures.js";
+import { navElement } from "./scriptures.js";
 
 /*------------------------------------------------------------------------
  *                      CONSTANTS
@@ -52,7 +53,7 @@ const getScripturesSuccess = async function (chapterHtml) {
 
     injectNextPrevious();
     configureBreadcrumbs(0, requestedBookId, requestedChapter);
-    updateMarkers(extractGeoplaces());
+    setupMarkers();
 };
 
 const injectNextPrevious = function () {
