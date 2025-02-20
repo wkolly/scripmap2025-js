@@ -21,6 +21,7 @@ import {
     TAG_HEADER5
 } from "./html.js";
 import { books, volumes, volumeIdIsValid } from "./mapScripApi.js";
+import { navElement } from "./scriptures.js";
 
 /*------------------------------------------------------------------
  *                      CONSTANTS

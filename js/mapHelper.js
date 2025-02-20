@@ -12,8 +12,10 @@
 import { GOOGLE_MAPS_API_KEY } from "./config.js";
 import {
     DARK_MAP_BACKGROUND,
+    DARK_MAP_ID,
     DARK_MAP_STYLE,
     LIGHT_MAP_BACKGROUND,
+    LIGHT_MAP_ID,
     LIGHT_MAP_STYLE
 } from "./constants.js";
 import { domNode, TAG_DIV } from "./html.js";
@@ -60,7 +62,7 @@ const createMap = async function (Map, zoom, center, mapTypeId, isDark) {
     window.map = new Map(document.getElementById("map"), {
         zoom,
         center,
-        mapId: "SCRIPTURES_MAPPED",
+        mapId: isDark ? DARK_MAP_ID : LIGHT_MAP_ID,
         mapTypeId,
         mapTypeControl: true,
         mapTypeControlOptions: {
@@ -71,9 +73,9 @@ const createMap = async function (Map, zoom, center, mapTypeId, isDark) {
         zoomControl: true,
         zoomControlOptions: {
             position: google.maps.ControlPosition.RIGHT_BOTTOM
-        },
-        backgroundColor: isDark ? DARK_MAP_BACKGROUND : LIGHT_MAP_BACKGROUND,
-        styles: isDark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE
+        }
+        // backgroundColor: isDark ? DARK_MAP_BACKGROUND : LIGHT_MAP_BACKGROUND,
+        // styles: isDark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE
     });
 
     window.mapIsLoaded = true;
